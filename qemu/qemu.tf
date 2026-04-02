@@ -12,7 +12,7 @@ terraform {
 # }
 
 # Remote via SSH (respects ~/.ssh/config)
-# in this case the machines are on a Tailscale network
+# in this case, this is a Tailscale ip
 provider "libvirt" {
 	uri = "qemu+ssh://jhonatan@100.70.196.37/system"
 }
@@ -27,6 +27,8 @@ resource "libvirt_domain" "laptopvm" {
 	libvirt_network {
 		network_name = "default"
 	}
+
+  # disk...
   
 	os = {
 		type         = "hvm"
