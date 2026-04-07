@@ -16,46 +16,29 @@ terraform {
 }
 
 provider "aws" {
-  region = var.aws_region
+  region = "us-east-1"
 }
 
-# Generate a new SSH key
+# generate a new SSH key
 resource "tls_private_key" "ssh" {
   algorithm = "RSA"
   rsa_bits  = 4096
 }
 
-# Register the public key in AWS
+# register the public key in AWS
 resource "aws_key_pair" "generated_key" {
   key_name   = "aws-deployment-key"
   public_key = tls_private_key.ssh.public_key_openssh
 }
 
-# Save the private key locally
+# save the private key locally
 resource "local_sensitive_file" "private_key" {
   content         = tls_private_key.ssh.private_key_pem
   filename        = "${path.module}/aws-deployment-key.pem"
   file_permission = "0400"
 }
 
-# Get the latest Ubuntu 22.04 AMI
-data "aws_ami" "ubuntu" {
-  most_recent = true
-
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-
-  owners = ["099720109477"] # Canonical
-}
-
-# Create a Security Group for HTTP and SSH
+# security group for HTTP and SSH
 resource "aws_security_group" "web_sg" {
   name        = "aws-deployment-sg"
   description = "Allow HTTP and SSH inbound traffic"
@@ -88,10 +71,11 @@ resource "aws_security_group" "web_sg" {
   }
 }
 
-# Create the EC2 Instance
+# EC2 instance creation
+# AMI finder: https://cloud-images.ubuntu.com/locator/ec2/
 resource "aws_instance" "web" {
   ami                    = "ami-00de3875b03809ec5"
-  instance_type          = "t3.micro"
+  instance_type          = "t3.micro" # free tier
   key_name               = aws_key_pair.generated_key.key_name
   vpc_security_group_ids = [aws_security_group.web_sg.id]
 
@@ -99,7 +83,7 @@ resource "aws_instance" "web" {
     Name = "Nginx-Server"
   }
 
-  # Ensure the instance accepts SSH before running Ansible
+  # setup SSH before running Ansible
   provisioner "remote-exec" {
     inline = ["echo 'SSH is ready!'"]
 
@@ -112,7 +96,7 @@ resource "aws_instance" "web" {
   }
 }
 
-# Create Ansible inventory file dynamically
+# create Ansible inventory file dynamically
 resource "local_file" "ansible_inventory" {
   content = templatefile("${path.module}/inventory.tpl", {
     ip          = aws_instance.web.public_ip
@@ -121,7 +105,7 @@ resource "local_file" "ansible_inventory" {
   filename = "${path.module}/ansible/inventory.ini"
 }
 
-# Run Ansible Playbook
+# run Ansible playbook
 resource "null_resource" "run_ansible" {
   depends_on = [
     aws_instance.web,
