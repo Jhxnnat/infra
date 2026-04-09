@@ -1,0 +1,9 @@
+{
+  "name": "node-multistage-app",
+  "version": "2.0.0",
+  "description": "Simple Node.js app for Docker multi-stage",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
