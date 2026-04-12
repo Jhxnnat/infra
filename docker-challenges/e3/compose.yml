@@ -1,0 +1,64 @@
+services:
+  db:
+    container_name: postgres
+    image: postgres:15-alpine
+    restart: unless-stopped
+    shm_size: 128mb
+    env_file:
+      - .env
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - ${DB_DATA_LOCATION}:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    networks: [backend]
+
+  redis:
+    container_name: redis
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: redis-cli ping || exit 1
+    restart: unless-stopped
+    networks: [backend]
+
+  app:
+    container_name: flask_app
+    build: .
+    networks: 
+      - backend
+      - frontend
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  nginx:
+    container_name: nginx
+    image: nginx:alpine
+    volumes:
+      - ./data/nginx/templates:/etc/nginx/templates
+    ports:
+      - '8080:80'
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks: [frontend]
+
+networks:
+  backend:
+    driver: bridge
+  frontend:
+    driver: bridge
+
+
