@@ -1,3 +1,2 @@
-Terraform and Ansible files and examples from my Infra TI class.
-
+Miscellaneous infraestructure as a code projects, examples, challenges and other things.
 
