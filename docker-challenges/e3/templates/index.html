@@ -1,5 +1,8 @@
-<h1>Flask, Redis, Postgres y Nginx</h1>
-<br/>
-{% if visits %}
-	<p>Número de visitas: {{ visits }}</p>
-{% endif %}
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{% block title %} Visits {% endblock %}</h1>
+	{% if visits %}
+		<p>Number of visits: {{ visits }}</p>
+	{% endif %}
+{% endblock %}

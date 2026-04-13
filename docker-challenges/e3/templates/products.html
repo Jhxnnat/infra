@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{% block title %} Books {% endblock %}</h1>
+    {% for product in products %}
+        <div class='product'>
+            <h3>#{{ product[0] }}</h3>
+            <p class='price'>{{ product[1] }}</p>
+        </div>
+    {% endfor %}
+{% endblock %}

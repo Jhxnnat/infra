@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, render_template, request, redirect, url_for
+import psycopg2
 from redis import Redis
 import os
 
@@ -11,22 +12,50 @@ if not FLASK_PORT:
 else:
     FLASK_PORT = int(FLASK_PORT)
 
+def get_db_connection():
+    conn = psycopg2.connect(
+        host='db',
+        database=os.environ.get('DB_NAME'),
+        user=os.environ.get('DB_USERNAME'),
+        password=os.environ.get('DB_PASSWORD')
+    )
+    return conn
+
 # contador de visitas con Redis
 @app.route('/', methods=['GET'])
-def main():
+def index():
     redis.incr('hits')
     counter = str(redis.get('hits'),'utf-8')
     return render_template('index.html', visits=counter)
 
-# GET/health: Estado de conectividad con Redis y DB
-# @app.route("/health")
-# def health():
-#     pass
-
 # GET/productos: Lista productos desde PostgreSQL
-# @app.route("/products")
-# def products():
-#     pass
+@app.route("/products")
+def products():
+    redis.incr('hits')
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('SELECT * FROM products;')
+    products = cur.fetchall()
+    cur.close()
+    conn.close()
+    return render_template('products.html', products=products)
+
+# GET/health: Estado de conectividad con Redis y DB
+@app.route("/health")
+def health():
+    status = {
+        "redis": "available",
+        "db": "available"
+    }
+    
+    try: redis.incr('hits')
+    except: status["redis"] = "unavailable"
+
+    try: conn = get_db_connection()
+    except: status["db"] = "unavailable"
+
+    return render_template('health.html', status=status)
+    
 
 if __name__ == "__main__":
     print("Stating Flask App...")

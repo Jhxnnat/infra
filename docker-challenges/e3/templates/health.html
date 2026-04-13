@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{% block title %} Health {% endblock %}</h1>
+	{% if status %}
+		<p>DB Health: {{ status.db }}</p>
+		<p>Redis Health: {{ status.redis }}</p>
+	{% endif %}
+{% endblock %}
